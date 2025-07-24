@@ -42,7 +42,9 @@ tools_available = {
     "whatweb": False,
     "gobuster": False,
     "nmap": False,
-    "tshark": False
+    "tshark": False,
+    "figlet": False,  # Added to check for figlet
+    "lolcat": False   # Added to check for lolcat
 }
 stop_execution = False
 wireshark_process = None
@@ -79,15 +81,15 @@ CVE_DATABASE = {
     }
 }
 
-# ASCII Art for Team VENOM
+# ASCII Art for Team VENOM (fallback if figlet or lolcat not available)
 ASCII_ART = r"""
-   _____ _          
-  / ____| |         
- | |    | |__   ___ 
- | |    | '__ \ / __|
- | |____| | | | (__ 
-  \_____|_| |_|____|
-  CERTIF CYBER Scanner by Team VENOM
+   _____ _       
+  / ____| |      
+ | |    | |__    
+ | |    | '__ \  
+ | |____| | | | 
+  \_____|_| |_| 
+ CERTIF CYBER Scanner by Team VENOM
 ====================================
 """
 
@@ -98,9 +100,28 @@ def print_fallback(message, style=None):
     else:
         print(message)
 
+# Function to display VENOM banner using figlet and lolcat if available
+def display_venom_banner():
+    if tools_available.get("figlet", False) and tools_available.get("lolcat", False):
+        try:
+            banner = subprocess.run(
+                "figlet -f slant 'VENOM' | lolcat",
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=10
+            ).stdout
+            banner += "\n CERTIF CYBER Scanner by Team VENOM\n====================================\n"
+            print_fallback(banner, style="bold magenta")
+        except Exception as e:
+            print_fallback(f"[!] Error displaying banner: {str(e)}", style="bold red")
+            print_fallback(ASCII_ART, style="bold magenta")
+    else:
+        print_fallback(ASCII_ART, style="bold magenta")
+
 # Display welcome screen with tools
 def display_welcome():
-    print_fallback(ASCII_ART, style="bold magenta")
+    display_venom_banner()
     print_fallback("Welcome, VENOM! Ready to dominate the cyberspace?", style="bold cyan")
     if rich_available:
         table = Table(title="Available Tools", show_lines=True, border_style="cyan", header_style="bold magenta")
@@ -136,7 +157,9 @@ def test_tool(tool):
             "whatweb": "whatweb --version",
             "gobuster": "gobuster -h",
             "nmap": "nmap --version",
-            "tshark": "tshark --version"
+            "tshark": "tshark --version",
+            "figlet": "figlet -v",
+            "lolcat": "lolcat -v"
         }.get(tool)
         if cmd:
             subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=10)
@@ -170,7 +193,7 @@ def install_or_update_tools(tools):
     
     for tool in tools:
         try:
-            if tool in ["suricata", "nikto", "whatweb", "gobuster", "nmap", "tshark"]:
+            if tool in ["suricata", "nikto", "whatweb", "gobuster", "nmap", "tshark", "figlet", "lolcat"]:
                 # Ensure suricata group exists
                 if tool == "suricata":
                     try:
@@ -653,7 +676,7 @@ def main():
     # Prompt for tool installation
     install = Confirm.ask("[cyan]Install/update tools?[/cyan]") if rich_available else input("Install/update tools? (y/n): ").lower() == 'y'
     if install:
-        warnings = install_or_update_tools(["suricata", "nikto", "whatweb", "gobuster", "nmap", "tshark", "python3-rich"])
+        warnings = install_or_update_tools(["suricata", "nikto", "whatweb", "gobuster", "nmap", "tshark", "figlet", "lolcat", "python3-rich"])
         if warnings:
             print_fallback("[!] Some tools failed to install. Check output for details.", style="bold yellow")
         for tool in tools_available:
